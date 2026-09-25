@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#6C2BD9">
+<title>DIT Report — Media Log</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%236C2BD9%22/><text x=%2250%22 y=%2266%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-weight=%22700%22>D</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="phone-shell">
+
+  <!-- ===== TOP BAR ===== -->
+  <header class="topbar" id="topbar">
+    <button class="icon-btn back-btn" id="backBtn" aria-label="Back" style="display:none;">‹</button>
+    <div class="topbar-title" id="topbarTitle">DIT Report</div>
+    <button class="icon-btn" id="profileShortcut" aria-label="Profile">◍</button>
+  </header>
+
+  <main class="screens" id="screens">
+
+    <!-- ===== HOME ===== -->
+    <section class="screen active" id="screen-home">
+      <div class="greeting-card">
+        <div class="greeting-text">
+          <div class="hello" id="homeGreeting">Hi there 👋</div>
+          <div class="today" id="homeToday">Today</div>
+        </div>
+        <div class="active-project-chip" id="activeProjectChip">No project selected</div>
+      </div>
+
+      <div class="date-strip" id="dateStrip"></div>
+
+      <div class="quick-actions">
+        <button class="quick-card qc-green" data-action="new-report">
+          <span class="qc-icon">＋</span><span>New report</span>
+        </button>
+        <button class="quick-card qc-violet" data-nav="calendar">
+          <span class="qc-icon">🗓</span><span>Calendar</span>
+        </button>
+        <button class="quick-card qc-orange" data-nav="crew">
+          <span class="qc-icon">👥</span><span>Crew</span>
+        </button>
+      </div>
+
+      <div class="section-label">Recent reports</div>
+      <div class="report-cards" id="recentReports"></div>
+      <div class="empty-state" id="homeEmpty" style="display:none;">
+        <div class="empty-title">No reports yet</div>
+        <div class="empty-sub">Tap "New report" to log your first card.</div>
+      </div>
+    </section>
+
+    <!-- ===== CALENDAR ===== -->
+    <section class="screen" id="screen-calendar">
+      <div class="project-switcher" id="projectSwitcherCal"></div>
+      <div class="calendar-header">
+        <button class="icon-btn" id="calPrev">‹</button>
+        <div class="calendar-month" id="calMonthLabel"></div>
+        <button class="icon-btn" id="calNext">›</button>
+      </div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+      <div class="section-label">Reports on <span id="calSelectedDateLabel">this day</span></div>
+      <div class="report-cards" id="calDayReports"></div>
+      <button class="btn btn-block btn-green" id="calAddForDay">＋ Add report for this day</button>
+    </section>
+
+    <!-- ===== REPORTS LIST ===== -->
+    <section class="screen" id="screen-reports">
+      <div class="project-switcher" id="projectSwitcherList"></div>
+      <input class="search-input" id="reportSearch" placeholder="Search by date, storage, remarks…">
+      <div class="report-cards" id="allReports"></div>
+      <div class="empty-state" id="reportsEmpty" style="display:none;">
+        <div class="empty-title">Nothing found</div>
+        <div class="empty-sub">Try a different search or add a new report.</div>
+      </div>
+    </section>
+
+    <!-- ===== EDITOR ===== -->
+    <section class="screen" id="screen-editor">
+      <div class="editor-project-row">
+        <label>Project</label>
+        <select id="editorProjectSelect"></select>
+      </div>
+
+      <div class="field-card">
+        <div class="field-row">
+          <label>Date</label>
+          <input type="date" id="fDate">
+        </div>
+        <div class="field-row two">
+          <div><label>Page no</label><input id="fPageNo" inputmode="numeric" value="1"></div>
+          <div><label>Page of</label><input id="fPageOf" inputmode="numeric" value="1"></div>
+        </div>
+        <div class="field-row two">
+          <div><label>Camera</label><input id="fCamera" placeholder="ARRI Alexa Mini"></div>
+          <div><label>Studio name</label><input id="fStudioName"></div>
+        </div>
+        <div class="field-row">
+          <label>Hard disk</label><input id="fHardDisk" placeholder="G-Drive 4TB #2">
+        </div>
+        <div class="field-row">
+          <label>Remarks</label><input id="fRemarks">
+        </div>
+      </div>
+
+      <div class="pill-toggle" id="mediaToggle">
+        <button data-type="RAW" id="pillRaw">RAW</button>
+        <button data-type="OFFLINE" id="pillOffline">OFFLINE</button>
+      </div>
+      <div class="field-row two" id="formatFields" style="display:none;">
+        <div><label>Format</label><input id="fFormat"></div>
+        <div><label>Codec</label><input id="fCodec"></div>
+      </div>
+
+      <div class="section-label rows-label">
+        Card log <span class="count-badge" id="rowCountBadge">0</span>
+      </div>
+      <div id="rowsList" class="rows-list"></div>
+      <button class="btn btn-outline btn-block" id="addRowBtn">＋ Add card</button>
+
+      <div class="section-label">Signatures</div>
+      <div class="field-card">
+        <div class="field-row">
+          <label>1st AC / DIT</label><input id="fSignAC" placeholder="Type name">
+        </div>
+        <div class="field-row">
+          <label>Ast. Director</label><input id="fSignDirector" placeholder="Type name">
+        </div>
+      </div>
+
+      <div class="editor-actions">
+        <button class="btn btn-outline" id="exportCsvBtn">CSV</button>
+        <button class="btn btn-outline" id="exportPdfBtn">PDF</button>
+        <button class="btn btn-whatsapp" id="shareWaBtn">Share</button>
+      </div>
+      <button class="btn btn-block btn-danger-outline" id="deleteReportBtn">Delete this report</button>
+    </section>
+
+    <!-- ===== CREW / PROJECTS ===== -->
+    <section class="screen" id="screen-crew">
+      <div class="section-label">Projects</div>
+      <div class="project-list" id="projectList"></div>
+      <div class="field-card">
+        <div class="field-row"><label>New project</label><input id="newProjectName" placeholder="Movie / project name"></div>
+        <div class="field-row two">
+          <div><label>Director</label><input id="newProjectDirector"></div>
+          <div><label>DOP</label><input id="newProjectDop"></div>
+        </div>
+        <div class="field-row"><label>Production house</label><input id="newProjectHouse"></div>
+      </div>
+      <button class="btn btn-block btn-violet" id="addProjectBtn">＋ Create project</button>
+
+      <div class="section-label">Crew — <span id="crewProjectName">select a project</span></div>
+      <div class="crew-list" id="crewList"></div>
+      <div class="field-card">
+        <div class="field-row two">
+          <div><label>Role</label><input id="newCrewRole" placeholder="Camera man"></div>
+          <div><label>Name</label><input id="newCrewName"></div>
+        </div>
+        <div class="field-row"><label>Phone</label><input id="newCrewPhone" inputmode="tel" placeholder="+91…"></div>
+      </div>
+      <button class="btn btn-block btn-outline" id="addCrewBtn">＋ Add crew member</button>
+    </section>
+
+    <!-- ===== PROFILE ===== -->
+    <section class="screen" id="screen-profile">
+      <div class="profile-card" id="profileView">
+        <div class="avatar" id="profileAvatar">D</div>
+        <div class="profile-name" id="profileNameView">—</div>
+        <div class="profile-role" id="profileRoleView">DIT</div>
+        <div class="profile-meta" id="profileMetaView"></div>
+        <button class="btn btn-outline btn-block" id="editProfileBtn">Edit profile</button>
+      </div>
+      <div class="field-card" id="profileEdit" style="display:none;">
+        <div class="field-row"><label>Name</label><input id="pName"></div>
+        <div class="field-row"><label>Role</label><input id="pRole" placeholder="DIT"></div>
+        <div class="field-row"><label>WhatsApp number</label><input id="pPhone" inputmode="tel" placeholder="+91XXXXXXXXXX"></div>
+        <div class="field-row"><label>Email</label><input id="pEmail" type="email"></div>
+        <div class="field-row"><label>Studio</label><input id="pStudio"></div>
+        <button class="btn btn-block btn-green" id="saveProfileBtn">Save profile</button>
+      </div>
+
+      <div class="section-label">Data</div>
+      <button class="btn btn-outline btn-block" id="exportAllCsvBtn">Export all reports (CSV)</button>
+    </section>
+
+  </main>
+
+  <!-- ===== FAB ===== -->
+  <button class="fab" id="fabNew" aria-label="New report">＋</button>
+
+  <!-- ===== BOTTOM NAV ===== -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-nav="home"><span>🏠</span>Home</button>
+    <button class="nav-btn" data-nav="calendar"><span>🗓</span>Calendar</button>
+    <button class="nav-btn" data-nav="reports"><span>📋</span>Reports</button>
+    <button class="nav-btn" data-nav="crew"><span>👥</span>Crew</button>
+    <button class="nav-btn" data-nav="profile"><span>◍</span>Profile</button>
+  </nav>
+</div>
+
+<div id="printRoot" class="print-root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
