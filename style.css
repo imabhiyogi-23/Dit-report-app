@@ -21,7 +21,7 @@
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
 body{
-  background:#E9E9EC;
+  background:#FDFBD4;
   font-family:var(--font);
   color:var(--text);
   min-height:100vh;
