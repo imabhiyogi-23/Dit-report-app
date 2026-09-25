@@ -6,6 +6,7 @@
     profile:'ditapp_profile',
     projects:'ditapp_projects',
     reports:'ditapp_reports',
+    photos:'ditapp_photos',
     activeProject:'ditapp_active_project'
   };
 
@@ -16,25 +17,19 @@
     }catch(e){ return fallback; }
   }
   function save(key, value){
-    try{ localStorage.setItem(key, JSON.stringify(value)); }
-    catch(e){ console.error('save failed', key, e); }
+    try{ localStorage.setItem(key, JSON.stringify(value)); return true; }
+    catch(e){ console.error('save failed', key, e); return false; }
   }
   function uid(p){ return p + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
 
   let profile = load(LS.profile, { name:'', role:'DIT', phone:'', email:'', studio:'' });
   let projects = load(LS.projects, []);
   let reports  = load(LS.reports, []);
+  let photos   = load(LS.photos, []);
   let activeProjectId = load(LS.activeProject, projects[0] ? projects[0].id : null);
 
-  function persistAll(){
-    save(LS.profile, profile);
-    save(LS.projects, projects);
-    save(LS.reports, reports);
-    save(LS.activeProject, activeProjectId);
-  }
-
   function getProject(id){ return projects.find(p => p.id === id) || null; }
-  function projectName(id){ const p = getProject(id); return p ? p.name : 'No project'; }
+  function projectName(id){ const p = getProject(id); return p ? (p.name || 'Untitled') : 'No project'; }
 
   function todayISO(){
     const d = new Date();
@@ -65,6 +60,7 @@
   }
 
   /* ============ navigation state ============ */
+  const NAV_MAIN = ['home','calendar','photos','reports','profile'];
   let currentScreen = 'home';
   let backTarget = null;
   let currentReportId = null;
@@ -74,32 +70,42 @@
   let calYear, calMonth, calSelectedDate = todayISO();
   { const t = new Date(); calYear = t.getFullYear(); calMonth = t.getMonth(); }
   let listProjectFilter = 'all';
+  let photoProjectFilter = 'all';
   let crewSelectedProjectId = activeProjectId;
+  let openPhotoId = null;
 
-  const screenTitles = { home:'DIT Report', calendar:'Calendar', reports:'All reports', editor:'Report editor', crew:'Crew & projects', profile:'Profile' };
+  const screenTitles = { home:'DIT Report', calendar:'Calendar', photos:'Photos', reports:'All reports', editor:'Report editor', crew:'Crew & projects', profile:'Profile' };
 
-  function showScreen(name, opts){
-    opts = opts || {};
+  function showScreen(name){
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-' + name).classList.add('active');
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
+    if(NAV_MAIN.includes(name)){
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
+    }
     document.getElementById('topbarTitle').textContent = screenTitles[name] || 'DIT Report';
-    document.getElementById('backBtn').style.display = (name === 'editor' && opts.showBack !== false) ? 'flex' : 'none';
-    document.querySelector('.bottom-nav').style.display = name === 'editor' ? 'none' : 'flex';
-    document.getElementById('fabNew').style.display = name === 'editor' ? 'none' : 'flex';
+    const isSub = !NAV_MAIN.includes(name);
+    document.getElementById('backBtn').style.display = isSub ? 'flex' : 'none';
+    document.querySelector('.bottom-nav').style.display = isSub ? 'none' : 'flex';
+    document.getElementById('fabNew').style.display = (name === 'home' || name === 'calendar' || name === 'reports') ? 'flex' : 'none';
     currentScreen = name;
     if(name === 'home') renderHome();
     if(name === 'calendar') renderCalendarScreen();
+    if(name === 'photos') renderPhotosScreen();
     if(name === 'reports') renderReportsScreen();
     if(name === 'crew') renderCrewScreen();
     if(name === 'profile') renderProfileScreen();
+  }
+
+  function openSubScreen(name){
+    backTarget = currentScreen;
+    showScreen(name);
   }
 
   /* ============ HOME ============ */
   function renderHome(){
     document.getElementById('homeGreeting').textContent = profile.name ? ('Hi, ' + profile.name.split(' ')[0]) : 'Hi there';
     document.getElementById('homeToday').textContent = fmtDateLabel(todayISO());
-    document.getElementById('activeProjectChip').textContent = activeProjectId ? projectName(activeProjectId) : 'No project — add one in Crew';
+    document.getElementById('activeProjectChip').textContent = activeProjectId ? projectName(activeProjectId) : 'No project — add one in Crew & projects';
 
     const strip = document.getElementById('dateStrip');
     strip.innerHTML = '';
@@ -122,7 +128,7 @@
     let list = reports.slice();
     if(homeSelectedDate) list = list.filter(r => r.date === homeSelectedDate);
     list.sort((a,b) => (b.date||'').localeCompare(a.date||'') || b.updatedAt - a.updatedAt);
-    list = list.slice(0, homeSelectedDate ? list.length : 8);
+    if(!homeSelectedDate) list = list.slice(0, 8);
 
     const container = document.getElementById('recentReports');
     container.innerHTML = '';
@@ -142,15 +148,15 @@
         <div class="badge ${r.mediaType === 'RAW' ? 'badge-raw' : 'badge-offline'}">${r.mediaType}</div>
       </div>
       <div class="rc-meta">
-        <span>🎬 ${r.rows.length} card${r.rows.length===1?'':'s'}</span>
-        <span>💾 ${escapeHtml(r.hardDisk || '—')}</span>
+        <span>Cards: ${r.rows.length}</span>
+        <span>Storage: ${escapeHtml(r.hardDisk || '—')}</span>
       </div>
     `;
     div.addEventListener('click', () => openEditor(r.id, currentScreen));
     return div;
   }
 
-  /* ============ CALENDAR ============ */
+  /* ============ shared project switcher ============ */
   function renderProjectSwitcher(el, activeFilter, onPick){
     el.innerHTML = '';
     const allChip = document.createElement('div');
@@ -167,6 +173,7 @@
     });
   }
 
+  /* ============ CALENDAR ============ */
   function renderCalendarScreen(){
     renderProjectSwitcher(document.getElementById('projectSwitcherCal'), calProjectFilter, (id) => {
       calProjectFilter = id;
@@ -227,8 +234,101 @@
   });
   document.getElementById('calAddForDay').addEventListener('click', () => {
     const pid = calProjectFilter !== 'all' ? calProjectFilter : activeProjectId;
-    if(!pid){ alert('Create a project first (Crew tab), then add a report.'); showScreen('crew'); return; }
+    if(!pid){ alert('Create a project first, then add a report.'); openSubScreen('crew'); return; }
     createAndOpenReport(pid, calSelectedDate, 'calendar');
+  });
+
+  /* ============ PHOTOS ============ */
+  function renderPhotosScreen(){
+    renderProjectSwitcher(document.getElementById('projectSwitcherPhotos'), photoProjectFilter, (id) => {
+      photoProjectFilter = id;
+      renderPhotosScreen();
+    });
+    const list = photos.filter(p => photoProjectFilter === 'all' || p.projectId === photoProjectFilter)
+      .sort((a,b) => b.createdAt - a.createdAt);
+    const grid = document.getElementById('photoGrid');
+    grid.innerHTML = '';
+    document.getElementById('photosEmpty').style.display = list.length ? 'none' : 'block';
+    list.forEach(p => {
+      const thumb = document.createElement('div');
+      thumb.className = 'photo-thumb';
+      thumb.innerHTML = `<img src="${p.dataUrl}" alt=""><div class="pt-date">${fmtDateLabel(p.date)}</div>`;
+      thumb.addEventListener('click', () => openLightbox(p.id));
+      grid.appendChild(thumb);
+    });
+  }
+
+  function resizeImage(file, maxDim, quality){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          let w = img.width, h = img.height;
+          if(w > h && w > maxDim){ h = Math.round(h * maxDim / w); w = maxDim; }
+          else if(h > maxDim){ w = Math.round(w * maxDim / h); h = maxDim; }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  document.getElementById('addPhotoBtn').addEventListener('click', () => {
+    document.getElementById('photoInput').click();
+  });
+  document.getElementById('photoInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+    try{
+      const dataUrl = await resizeImage(file, 1280, 0.72);
+      const caption = prompt('Add a caption (optional):', '') || '';
+      const pid = photoProjectFilter !== 'all' ? photoProjectFilter : activeProjectId;
+      const photo = { id: uid('photo'), date: todayISO(), projectId: pid, caption, dataUrl, createdAt: Date.now() };
+      photos.push(photo);
+      const ok = save(LS.photos, photos);
+      if(!ok){
+        photos.pop();
+        alert("Couldn't save that photo — storage is full. Try deleting some older photos first.");
+        return;
+      }
+      renderPhotosScreen();
+    }catch(err){
+      console.error(err);
+      alert('Could not read that photo. Please try again.');
+    }
+  });
+
+  function openLightbox(photoId){
+    const p = photos.find(x => x.id === photoId);
+    if(!p) return;
+    openPhotoId = photoId;
+    document.getElementById('lightboxImg').src = p.dataUrl;
+    document.getElementById('lightboxCaption').textContent = [fmtDateLabel(p.date), projectName(p.projectId), p.caption].filter(Boolean).join(' · ');
+    document.getElementById('photoLightbox').classList.add('open');
+  }
+  function closeLightbox(){
+    document.getElementById('photoLightbox').classList.remove('open');
+    openPhotoId = null;
+  }
+  document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+  document.getElementById('photoLightbox').addEventListener('click', (e) => {
+    if(e.target.id === 'photoLightbox') closeLightbox();
+  });
+  document.getElementById('lightboxDelete').addEventListener('click', () => {
+    if(!openPhotoId) return;
+    if(!confirm('Delete this photo?')) return;
+    photos = photos.filter(p => p.id !== openPhotoId);
+    save(LS.photos, photos);
+    closeLightbox();
+    renderPhotosScreen();
   });
 
   /* ============ REPORTS LIST ============ */
@@ -279,7 +379,7 @@
 
   document.getElementById('fabNew').addEventListener('click', () => {
     const pid = activeProjectId || (projects[0] && projects[0].id);
-    if(!pid){ alert('Create a project first (Crew tab), then add a report.'); showScreen('crew'); return; }
+    if(!pid){ alert('Create a project first, then add a report.'); openSubScreen('crew'); return; }
     createAndOpenReport(pid, todayISO(), currentScreen);
   });
   document.querySelectorAll('[data-action="new-report"]').forEach(b => b.addEventListener('click', () => {
@@ -351,7 +451,7 @@
           <div><label>Clip to</label><input data-field="clipTo" data-idx="${idx}" value="${escapeHtml(row.clipTo)}" placeholder="C012"></div>
           <div><label>Storage</label><input data-field="storage" data-idx="${idx}" value="${escapeHtml(row.storage)}" placeholder="Drive A"></div>
         </div>
-        <div class="row-remarks"><label style="font-size:9.5px;text-transform:uppercase;color:var(--text-muted);font-weight:600;">Remarks</label><input data-field="remarks" data-idx="${idx}" value="${escapeHtml(row.remarks)}"></div>
+        <div class="row-remarks"><label>Remarks</label><input data-field="remarks" data-idx="${idx}" value="${escapeHtml(row.remarks)}"></div>
         <button class="row-del-btn" data-idx="${idx}">Remove card</button>
       `;
       list.appendChild(card);
@@ -422,7 +522,7 @@
         item.className = 'crew-item';
         item.innerHTML = `
           <div><div class="crew-role">${escapeHtml(c.role)}</div><div class="crew-name">${escapeHtml(c.name)}</div>${c.phone ? '<div class="crew-phone">'+escapeHtml(c.phone)+'</div>' : ''}</div>
-          <div class="crew-actions"><button data-idx="${idx}" class="crew-del">✕</button></div>
+          <div class="crew-actions"><button data-idx="${idx}" class="crew-del">&times;</button></div>
         `;
         crewList.appendChild(item);
       });
@@ -475,9 +575,9 @@
     document.getElementById('profileNameView').textContent = profile.name || 'Add your name';
     document.getElementById('profileRoleView').textContent = profile.role || 'DIT';
     document.getElementById('profileMetaView').innerHTML =
-      (profile.phone ? '📱 ' + escapeHtml(profile.phone) + '<br>' : '') +
-      (profile.email ? '✉️ ' + escapeHtml(profile.email) + '<br>' : '') +
-      (profile.studio ? '🎬 ' + escapeHtml(profile.studio) : '');
+      (profile.phone ? escapeHtml(profile.phone) + '<br>' : '') +
+      (profile.email ? escapeHtml(profile.email) + '<br>' : '') +
+      (profile.studio ? escapeHtml(profile.studio) : '');
     document.getElementById('pName').value = profile.name || '';
     document.getElementById('pRole').value = profile.role || '';
     document.getElementById('pPhone').value = profile.phone || '';
@@ -501,6 +601,7 @@
     save(LS.profile, profile);
     renderProfileScreen();
   });
+  document.getElementById('manageCrewBtn').addEventListener('click', () => openSubScreen('crew'));
 
   /* ============ NAV BINDINGS ============ */
   document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -508,7 +609,10 @@
   });
   document.querySelectorAll('[data-nav]').forEach(el => {
     if(!el.classList.contains('nav-btn')){
-      el.addEventListener('click', () => showScreen(el.dataset.nav));
+      el.addEventListener('click', () => {
+        if(el.dataset.nav === 'crew'){ openSubScreen('crew'); }
+        else { showScreen(el.dataset.nav); }
+      });
     }
   });
   document.getElementById('profileShortcut').addEventListener('click', () => showScreen('profile'));

@@ -5,48 +5,52 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#6C2BD9">
-<title>DIT Report — Media Log</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%236C2BD9%22/><text x=%2250%22 y=%2266%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-weight=%22700%22>D</text></svg>">
+<meta name="theme-color" content="#111827">
+<title>DIT Report</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23111827%22/><text x=%2250%22 y=%2266%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-weight=%22700%22>D</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="phone-shell">
+<div class="app-shell">
 
-  <!-- ===== TOP BAR ===== -->
   <header class="topbar" id="topbar">
-    <button class="icon-btn back-btn" id="backBtn" aria-label="Back" style="display:none;">‹</button>
+    <button class="icon-btn back-btn" id="backBtn" aria-label="Back" style="display:none;">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
     <div class="topbar-title" id="topbarTitle">DIT Report</div>
-    <button class="icon-btn" id="profileShortcut" aria-label="Profile">◍</button>
+    <button class="icon-btn" id="profileShortcut" aria-label="Profile">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.2" r="3.3"/><path d="M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6"/></svg>
+    </button>
   </header>
 
   <main class="screens" id="screens">
 
     <!-- ===== HOME ===== -->
     <section class="screen active" id="screen-home">
-      <div class="greeting-card">
-        <div class="greeting-text">
-          <div class="hello" id="homeGreeting">Hi there 👋</div>
-          <div class="today" id="homeToday">Today</div>
-        </div>
+      <div class="home-head">
+        <div class="hello" id="homeGreeting">Hi there</div>
+        <div class="today" id="homeToday">Today</div>
         <div class="active-project-chip" id="activeProjectChip">No project selected</div>
       </div>
 
       <div class="date-strip" id="dateStrip"></div>
 
       <div class="quick-actions">
-        <button class="quick-card qc-green" data-action="new-report">
-          <span class="qc-icon">＋</span><span>New report</span>
+        <button class="quick-card" data-action="new-report">
+          <span class="qc-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+          <span>New report</span>
         </button>
-        <button class="quick-card qc-violet" data-nav="calendar">
-          <span class="qc-icon">🗓</span><span>Calendar</span>
+        <button class="quick-card" data-nav="photos">
+          <span class="qc-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.2c0-.66.55-1.2 1.2-1.2h2.1l1.2-1.6h6.9l1.2 1.6h2.1c.66 0 1.2.55 1.2 1.2V18c0 .66-.55 1.2-1.2 1.2H5.2c-.66 0-1.2-.55-1.2-1.2z"/><circle cx="12" cy="13" r="3.3"/></svg></span>
+          <span>Add photo</span>
         </button>
-        <button class="quick-card qc-orange" data-nav="crew">
-          <span class="qc-icon">👥</span><span>Crew</span>
+        <button class="quick-card" data-nav="crew">
+          <span class="qc-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="2.6"/><path d="M3.5 19c0-3.2 2.5-5 5.5-5s5.5 1.8 5.5 5"/><circle cx="17" cy="9" r="2.1"/><path d="M15.2 14.3c2.5.35 4.1 1.9 4.1 4.7"/></svg></span>
+          <span>Crew &amp; projects</span>
         </button>
       </div>
 
@@ -62,14 +66,34 @@
     <section class="screen" id="screen-calendar">
       <div class="project-switcher" id="projectSwitcherCal"></div>
       <div class="calendar-header">
-        <button class="icon-btn" id="calPrev">‹</button>
+        <button class="icon-btn outline" id="calPrev">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
         <div class="calendar-month" id="calMonthLabel"></div>
-        <button class="icon-btn" id="calNext">›</button>
+        <button class="icon-btn outline" id="calNext">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
       </div>
       <div class="calendar-grid" id="calendarGrid"></div>
       <div class="section-label">Reports on <span id="calSelectedDateLabel">this day</span></div>
       <div class="report-cards" id="calDayReports"></div>
-      <button class="btn btn-block btn-green" id="calAddForDay">＋ Add report for this day</button>
+      <button class="btn btn-block btn-dark" id="calAddForDay">Add report for this day</button>
+    </section>
+
+    <!-- ===== PHOTOS ===== -->
+    <section class="screen" id="screen-photos">
+      <div class="project-switcher" id="projectSwitcherPhotos"></div>
+      <button class="btn btn-block btn-dark" id="addPhotoBtn">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="vertical-align:-3px;margin-right:6px;"><path d="M12 5v14M5 12h14"/></svg>
+        Add photo
+      </button>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;">
+      <div class="section-label">Photo log</div>
+      <div class="photo-grid" id="photoGrid"></div>
+      <div class="empty-state" id="photosEmpty" style="display:none;">
+        <div class="empty-title">No photos yet</div>
+        <div class="empty-sub">Snap card slates, storage labels, or set reference shots.</div>
+      </div>
     </section>
 
     <!-- ===== REPORTS LIST ===== -->
@@ -124,7 +148,7 @@
         Card log <span class="count-badge" id="rowCountBadge">0</span>
       </div>
       <div id="rowsList" class="rows-list"></div>
-      <button class="btn btn-outline btn-block" id="addRowBtn">＋ Add card</button>
+      <button class="btn btn-outline btn-block" id="addRowBtn">Add card</button>
 
       <div class="section-label">Signatures</div>
       <div class="field-card">
@@ -156,7 +180,7 @@
         </div>
         <div class="field-row"><label>Production house</label><input id="newProjectHouse"></div>
       </div>
-      <button class="btn btn-block btn-violet" id="addProjectBtn">＋ Create project</button>
+      <button class="btn btn-block btn-dark" id="addProjectBtn">Create project</button>
 
       <div class="section-label">Crew — <span id="crewProjectName">select a project</span></div>
       <div class="crew-list" id="crewList"></div>
@@ -167,7 +191,7 @@
         </div>
         <div class="field-row"><label>Phone</label><input id="newCrewPhone" inputmode="tel" placeholder="+91…"></div>
       </div>
-      <button class="btn btn-block btn-outline" id="addCrewBtn">＋ Add crew member</button>
+      <button class="btn btn-block btn-outline" id="addCrewBtn">Add crew member</button>
     </section>
 
     <!-- ===== PROFILE ===== -->
@@ -185,26 +209,51 @@
         <div class="field-row"><label>WhatsApp number</label><input id="pPhone" inputmode="tel" placeholder="+91XXXXXXXXXX"></div>
         <div class="field-row"><label>Email</label><input id="pEmail" type="email"></div>
         <div class="field-row"><label>Studio</label><input id="pStudio"></div>
-        <button class="btn btn-block btn-green" id="saveProfileBtn">Save profile</button>
+        <button class="btn btn-block btn-dark" id="saveProfileBtn">Save profile</button>
       </div>
 
       <div class="section-label">Data</div>
+      <button class="btn btn-outline btn-block" id="manageCrewBtn">Manage crew &amp; projects</button>
       <button class="btn btn-outline btn-block" id="exportAllCsvBtn">Export all reports (CSV)</button>
     </section>
 
   </main>
 
-  <!-- ===== FAB ===== -->
-  <button class="fab" id="fabNew" aria-label="New report">＋</button>
+  <button class="fab" id="fabNew" aria-label="New report">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
 
-  <!-- ===== BOTTOM NAV ===== -->
   <nav class="bottom-nav">
-    <button class="nav-btn active" data-nav="home"><span>🏠</span>Home</button>
-    <button class="nav-btn" data-nav="calendar"><span>🗓</span>Calendar</button>
-    <button class="nav-btn" data-nav="reports"><span>📋</span>Reports</button>
-    <button class="nav-btn" data-nav="crew"><span>👥</span>Crew</button>
-    <button class="nav-btn" data-nav="profile"><span>◍</span>Profile</button>
+    <button class="nav-btn active" data-nav="home">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V20h5v-6h2v6h5V9.5"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-btn" data-nav="calendar">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2"/><path d="M8 3.5v4M16 3.5v4M4 10.5h16"/></svg>
+      <span>Calendar</span>
+    </button>
+    <button class="nav-btn" data-nav="photos">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.2c0-.66.55-1.2 1.2-1.2h2.1l1.2-1.6h6.9l1.2 1.6h2.1c.66 0 1.2.55 1.2 1.2V18c0 .66-.55 1.2-1.2 1.2H5.2c-.66 0-1.2-.55-1.2-1.2z"/><circle cx="12" cy="13" r="3.3"/></svg>
+      <span>Photos</span>
+    </button>
+    <button class="nav-btn" data-nav="reports">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="4" width="13" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/></svg>
+      <span>Reports</span>
+    </button>
+    <button class="nav-btn" data-nav="profile">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.2" r="3.3"/><path d="M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6"/></svg>
+      <span>Profile</span>
+    </button>
   </nav>
+</div>
+
+<div class="lightbox" id="photoLightbox">
+  <button class="lightbox-close" id="lightboxClose" aria-label="Close">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>
+  </button>
+  <img id="lightboxImg" src="" alt="">
+  <div class="lightbox-caption" id="lightboxCaption"></div>
+  <button class="btn btn-danger-outline" id="lightboxDelete">Delete photo</button>
 </div>
 
 <div id="printRoot" class="print-root"></div>

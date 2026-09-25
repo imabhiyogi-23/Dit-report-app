@@ -8,14 +8,21 @@ calendar — built for DITs, 1st ACs, and production teams.
 
 - **Home** — today's date strip, quick actions, and recent reports at a glance
 - **Calendar** — browse every logged day by month, filter by project, add a report for any date
+- **Photos** — tap "Add photo" to take a picture (opens the camera on mobile) or choose
+  one from your gallery; add an optional caption, browse a grid of everything you've
+  shot, and tap any thumbnail to view it full-size or delete it
 - **Reports** — searchable list of every report across all projects
 - **Editor** — full media log per day: card no, clip range, storage, remarks, RAW/OFFLINE
   toggle (with format + codec fields for offline), signatures
-- **Crew & Projects** — create projects (movie/production), attach crew (camera man,
-  focus puller, gaffer, etc.) with name and phone
+- **Crew & Projects** — reachable from Home or Profile — create projects (movie/production),
+  attach crew (camera man, focus puller, gaffer, etc.) with name and phone
 - **Profile** — your own DIT details (name, role, WhatsApp number, email, studio)
 - **Export** — PDF (via html2pdf.js), CSV (single report or all reports), and a
   WhatsApp share shortcut that opens a pre-filled message to any number
+
+The interface is deliberately plain: a white/light-gray palette, one accent color,
+simple line icons, and no decoration beyond what's needed to read and enter data
+quickly on set.
 
 ## Uploading to GitHub
 
@@ -42,6 +49,9 @@ storage on the device you're using — nothing is sent to a server. This means:
   devices unless you export a CSV and move it yourself.
 - Clearing your browser's site data/cache will erase saved reports, so export a CSV
   backup of anything important.
+- Photos are compressed and stored the same way as everything else. Browsers cap
+  local storage at a few megabytes per site, so a large photo log can eventually hit
+  that limit — if a photo fails to save, delete a few older ones first.
 
 ## WhatsApp sharing note
 
