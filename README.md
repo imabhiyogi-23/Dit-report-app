@@ -27,18 +27,33 @@ quickly on set.
 ## Uploading to GitHub
 
 1. Create a new repository on GitHub (e.g. `dit-report-app`).
-2. Upload all four files — `index.html`, `style.css`, `app.js`, `README.md` — keeping
-   them in the same folder (no subfolders needed).
-3. To make it a live, installable site: go to **Settings → Pages**, set the source to
-   the `main` branch and `/ (root)`, and save. GitHub will give you a URL like
+2. Upload everything — `index.html`, `style.css`, `app.js`, `manifest.json`, `sw.js`,
+   `README.md`, and the `icons` folder (`icon-192.png`, `icon-512.png`,
+   `apple-touch-icon.png`) — keeping the same folder structure (the `icons` folder
+   stays a subfolder; everything else sits at the repo root).
+3. Go to **Settings → Pages**, set the source to the `main` branch and `/ (root)`,
+   and save. GitHub will give you a live HTTPS URL like
    `https://<your-username>.github.io/dit-report-app/`.
-4. Open that link on your phone and add it to your home screen (Share → Add to Home
-   Screen on iOS, or the browser menu → Install app on Android) for an app-like icon
-   and full-screen view.
 
-You can also just double-click `index.html` to run it locally with no server —
-everything works offline except the Google Fonts and the PDF library, which load
-from the internet the first time.
+## Installing it as an app
+
+The site is a installable Progressive Web App (PWA) once it's served over HTTPS
+(GitHub Pages works; opening `index.html` directly from disk does not, since
+browsers require a secure origin for installability):
+
+- **Android (Chrome/Edge)** — visit the site, then either tap the "Install app"
+  button under Profile → Install, or use the browser menu → "Install app" /
+  "Add to Home screen". It launches full-screen with its own icon, no address bar.
+- **iPhone/iPad (Safari)** — Safari doesn't support the install prompt, so tap the
+  Share icon and choose **Add to Home Screen**. The app will show the same
+  instructions under Profile if it detects Safari on iOS.
+- **Desktop (Chrome/Edge)** — an install icon appears in the address bar, or use
+  Profile → Install app.
+
+Once installed, a small service worker (`sw.js`) caches the app's own files so it
+keeps working without a connection — useful for logging cards with patchy set wifi.
+Only your own reports/photos/CSV exports need a live connection for exporting or
+WhatsApp sharing, not for using the log itself.
 
 ## How data is stored
 
@@ -63,5 +78,6 @@ CSV first and attach it manually in WhatsApp.
 ## Tech
 
 Plain HTML, CSS, and JavaScript — no build step, no framework, no dependencies to
-install. The only external resources are Google Fonts (Poppins/Inter) and
-html2pdf.js, both loaded from CDNs.
+install. The only external resources are Google Fonts (Inter) and html2pdf.js,
+both loaded from CDNs. `manifest.json` and `sw.js` are what make it installable
+and give it basic offline support.

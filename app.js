@@ -701,6 +701,49 @@
     window.open('https://wa.me/' + clean + '?text=' + encodeURIComponent(text), '_blank');
   });
 
+  /* ============ PWA INSTALL ============ */
+  let deferredInstallPrompt = null;
+  const installBtn = document.getElementById('installAppBtn');
+  const iosHint = document.getElementById('iosInstallHint');
+  const installedHint = document.getElementById('installedHint');
+
+  function isStandalone(){
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    if(!isStandalone()) installBtn.style.display = 'block';
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if(!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    installBtn.style.display = 'none';
+  });
+
+  window.addEventListener('appinstalled', () => {
+    installBtn.style.display = 'none';
+    iosHint.style.display = 'none';
+  });
+
+  if(isStandalone()){
+    installedHint.style.display = 'block';
+  } else {
+    const ua = window.navigator.userAgent;
+    const isIos = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+    if(isIos) iosHint.style.display = 'block';
+  }
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+
   /* ============ INIT ============ */
   showScreen('home');
 })();

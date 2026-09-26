@@ -11,6 +11,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -210,6 +212,15 @@
         <div class="field-row"><label>Email</label><input id="pEmail" type="email"></div>
         <div class="field-row"><label>Studio</label><input id="pStudio"></div>
         <button class="btn btn-block btn-dark" id="saveProfileBtn">Save profile</button>
+      </div>
+
+      <div class="section-label">Install</div>
+      <button class="btn btn-dark btn-block" id="installAppBtn" style="display:none;">Install app</button>
+      <div class="install-hint" id="iosInstallHint" style="display:none;">
+        On iPhone/iPad: tap the Share icon in Safari, then "Add to Home Screen".
+      </div>
+      <div class="install-hint" id="installedHint" style="display:none;">
+        App installed — you can open it from your home screen.
       </div>
 
       <div class="section-label">Data</div>
