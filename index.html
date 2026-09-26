@@ -164,6 +164,7 @@
 
       <div class="editor-actions">
         <button class="btn btn-outline" id="exportCsvBtn">CSV</button>
+        <button class="btn btn-outline" id="exportXlsxBtn">Excel</button>
         <button class="btn btn-outline" id="exportPdfBtn">PDF</button>
         <button class="btn btn-whatsapp" id="shareWaBtn">Share</button>
       </div>
@@ -226,6 +227,7 @@
       <div class="section-label">Data</div>
       <button class="btn btn-outline btn-block" id="manageCrewBtn">Manage crew &amp; projects</button>
       <button class="btn btn-outline btn-block" id="exportAllCsvBtn">Export all reports (CSV)</button>
+      <button class="btn btn-outline btn-block" id="exportAllXlsxBtn">Export all reports (Excel)</button>
     </section>
 
   </main>
@@ -267,9 +269,11 @@
   <button class="btn btn-danger-outline" id="lightboxDelete">Delete photo</button>
 </div>
 
-<div id="printRoot" class="print-root"></div>
+<div class="print-clip"><div id="printRoot" class="print-root"></div></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.18.5/package/dist/xlsx.full.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -17,7 +17,8 @@ calendar — built for DITs, 1st ACs, and production teams.
 - **Crew & Projects** — reachable from Home or Profile — create projects (movie/production),
   attach crew (camera man, focus puller, gaffer, etc.) with name and phone
 - **Profile** — your own DIT details (name, role, WhatsApp number, email, studio)
-- **Export** — PDF (via html2pdf.js), CSV (single report or all reports), and a
+- **Export** — PDF (via html2canvas + jsPDF), CSV, and Excel (.xlsx, via SheetJS) —
+  each for a single report or, from Profile, every report at once — plus a
   WhatsApp share shortcut that opens a pre-filled message to any number
 
 The interface is deliberately plain: a white/light-gray palette, one accent color,
@@ -78,6 +79,7 @@ CSV first and attach it manually in WhatsApp.
 ## Tech
 
 Plain HTML, CSS, and JavaScript — no build step, no framework, no dependencies to
-install. The only external resources are Google Fonts (Inter) and html2pdf.js,
-both loaded from CDNs. `manifest.json` and `sw.js` are what make it installable
+install. The only external resources are Google Fonts (Inter), html2canvas and
+jsPDF (used together to generate the PDF report), and SheetJS (for the Excel
+export). `manifest.json` and `sw.js` are what make it installable
 and give it basic offline support.

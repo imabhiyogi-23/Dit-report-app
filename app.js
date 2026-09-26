@@ -647,7 +647,12 @@
   });
 
   /* ============ PDF EXPORT ============ */
-  document.getElementById('exportPdfBtn').addEventListener('click', () => {
+  document.getElementById('exportPdfBtn').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const originalLabel = btn.textContent;
+    btn.textContent = 'Preparing…';
+    btn.disabled = true;
+
     const project = getProject(currentReport.projectId) || {};
     const root = document.getElementById('printRoot');
     root.innerHTML = `
@@ -677,7 +682,102 @@
       </div>
     `;
     const filename = (projectName(currentReport.projectId) + '_' + currentReport.date + '_DIT-Report.pdf').replace(/[^a-z0-9_.\-]+/gi,'_');
-    html2pdf().set({ margin:10, filename, html2canvas:{ scale:2 } }).from(root).save();
+
+    // Wait for web fonts so text isn't rendered with a fallback metric
+    // mismatch, then give the browser one paint frame before capturing.
+    try{ if(document.fonts && document.fonts.ready) await document.fonts.ready; }catch(err){}
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    try{
+      const canvas = await html2canvas(root, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        windowWidth: 750
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ unit:'pt', format:'a4', orientation:'portrait' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 24;
+      const usableWidth = pageWidth - margin * 2;
+      const usableHeight = pageHeight - margin * 2;
+      const imgWidth = usableWidth;
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = margin;
+      pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
+      heightLeft -= usableHeight;
+
+      while(heightLeft > 0){
+        position = margin - (imgHeight - heightLeft);
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
+        heightLeft -= usableHeight;
+      }
+
+      pdf.save(filename);
+    }catch(err){
+      console.error('PDF export failed', err);
+      alert("Couldn't generate the PDF. Please try again.");
+    }finally{
+      btn.textContent = originalLabel;
+      btn.disabled = false;
+      root.innerHTML = '';
+    }
+  });
+
+  /* ============ EXCEL EXPORT ============ */
+  function reportSheetRows(r){
+    const header = ['Sl.No','Date','Project','Card No','Clip From','Clip To','Storage','Remarks'];
+    return [header].concat(reportToCsvRows(r));
+  }
+
+  function downloadXlsx(filename, sheets){
+    const wb = XLSX.utils.book_new();
+    sheets.forEach(s => {
+      const ws = XLSX.utils.aoa_to_sheet(s.rows);
+      XLSX.utils.book_append_sheet(wb, ws, s.name.slice(0, 31));
+    });
+    XLSX.writeFile(wb, filename);
+  }
+
+  document.getElementById('exportXlsxBtn').addEventListener('click', () => {
+    try{
+      downloadXlsx(
+        (projectName(currentReport.projectId) + '_' + currentReport.date + '.xlsx').replace(/[^a-z0-9_.\-]+/gi,'_'),
+        [{ name:'Card Log', rows: reportSheetRows(currentReport) }]
+      );
+    }catch(err){
+      console.error('Excel export failed', err);
+      alert("Couldn't generate the Excel file. Please try again.");
+    }
+  });
+
+  document.getElementById('exportAllXlsxBtn').addEventListener('click', () => {
+    try{
+      const header = ['Sl.No','Date','Project','Card No','Clip From','Clip To','Storage','Remarks'];
+      let rows = [];
+      reports.slice().sort((a,b) => (a.date||'').localeCompare(b.date||'')).forEach(r => { rows = rows.concat(reportToCsvRows(r)); });
+
+      const projectRows = [['Project','Director','DOP','Production House','Crew Count']]
+        .concat(projects.map(p => [p.name || 'Untitled', p.director || '', p.dop || '', p.productionHouse || '', p.crew.length]));
+
+      const crewRows = [['Project','Role','Name','Phone']];
+      projects.forEach(p => p.crew.forEach(c => crewRows.push([p.name || 'Untitled', c.role, c.name, c.phone || ''])));
+
+      downloadXlsx('all_dit_reports.xlsx', [
+        { name:'All Reports', rows: [header].concat(rows) },
+        { name:'Projects', rows: projectRows },
+        { name:'Crew', rows: crewRows }
+      ]);
+    }catch(err){
+      console.error('Excel export failed', err);
+      alert("Couldn't generate the Excel file. Please try again.");
+    }
   });
 
   /* ============ WHATSAPP SHARE ============ */
