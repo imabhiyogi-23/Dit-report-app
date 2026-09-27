@@ -55,6 +55,7 @@
       remarks:'',
       rows:[ blankRow() ],
       signAC:'', signDirector:'',
+      favorite:false,
       updatedAt: Date.now()
     };
   }
@@ -73,6 +74,8 @@
   let photoProjectFilter = 'all';
   let crewSelectedProjectId = activeProjectId;
   let openPhotoId = null;
+  let listFavOnly = false;
+  let photoFavOnly = false;
 
   const screenTitles = { home:'DIT Report', calendar:'Calendar', photos:'Photos', reports:'All reports', editor:'Report editor', crew:'Crew & projects', profile:'Profile' };
 
@@ -136,24 +139,50 @@
     list.forEach(r => container.appendChild(reportCardEl(r)));
   }
 
+  function starIconSvg(){
+    return '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M12 3.5l2.6 5.6 6 .7-4.4 4.2 1.1 6-5.3-3-5.3 3 1.1-6-4.4-4.2 6-.7z"/></svg>';
+  }
+
   function reportCardEl(r){
     const div = document.createElement('div');
     div.className = 'report-card';
     div.innerHTML = `
-      <div class="rc-top">
-        <div>
-          <div class="rc-project">${escapeHtml(projectName(r.projectId))}</div>
-          <div class="rc-date">${fmtDateLabel(r.date)}</div>
+      <div class="rc-top-row">
+        <div class="rc-top">
+          <div>
+            <div class="rc-project">${escapeHtml(projectName(r.projectId))}</div>
+            <div class="rc-date">${fmtDateLabel(r.date)}</div>
+          </div>
+          <div class="badge ${r.mediaType === 'RAW' ? 'badge-raw' : 'badge-offline'}">${r.mediaType}</div>
         </div>
-        <div class="badge ${r.mediaType === 'RAW' ? 'badge-raw' : 'badge-offline'}">${r.mediaType}</div>
+        <button class="star-btn${r.favorite ? ' favorited' : ''}" data-id="${r.id}" aria-label="Toggle favorite">${starIconSvg()}</button>
       </div>
       <div class="rc-meta">
         <span>Cards: ${r.rows.length}</span>
         <span>Storage: ${escapeHtml(r.hardDisk || '—')}</span>
       </div>
     `;
+    div.querySelector('.star-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleReportFavorite(r.id, e.currentTarget);
+    });
     div.addEventListener('click', () => openEditor(r.id, currentScreen));
     return div;
+  }
+
+  function toggleReportFavorite(id, btnEl){
+    const rep = reports.find(r => r.id === id);
+    if(!rep) return;
+    rep.favorite = !rep.favorite;
+    save(LS.reports, reports);
+    if(btnEl){
+      btnEl.classList.toggle('favorited', rep.favorite);
+      btnEl.classList.remove('pop'); void btnEl.offsetWidth; btnEl.classList.add('pop');
+    }
+    // Re-render whichever list screen is active so sorting/filtering stays correct
+    if(currentScreen === 'home') renderHome();
+    else if(currentScreen === 'calendar') renderCalendarScreen();
+    else if(currentScreen === 'reports') renderReportsScreen();
   }
 
   /* ============ shared project switcher ============ */
@@ -199,7 +228,8 @@
     const cells = [];
     for(let i=firstDay-1;i>=0;i--) cells.push({ day: daysInPrevMonth-i, muted:true });
     for(let d=1; d<=daysInMonth; d++) cells.push({ day:d, muted:false });
-    while(cells.length % 7 !== 0) cells.push({ day: cells.length, muted:true });
+    let nextMonthDay = 1;
+    while(cells.length % 7 !== 0) cells.push({ day: nextMonthDay++, muted:true });
 
     cells.forEach(c => {
       const cell = document.createElement('div');
@@ -244,19 +274,25 @@
       photoProjectFilter = id;
       renderPhotosScreen();
     });
-    const list = photos.filter(p => photoProjectFilter === 'all' || p.projectId === photoProjectFilter)
-      .sort((a,b) => b.createdAt - a.createdAt);
+    document.getElementById('favFilterPhotos').classList.toggle('active', photoFavOnly);
+    let list = photos.filter(p => photoProjectFilter === 'all' || p.projectId === photoProjectFilter);
+    if(photoFavOnly) list = list.filter(p => p.favorite);
+    list.sort((a,b) => (b.favorite === a.favorite ? 0 : b.favorite ? 1 : -1) || b.createdAt - a.createdAt);
     const grid = document.getElementById('photoGrid');
     grid.innerHTML = '';
     document.getElementById('photosEmpty').style.display = list.length ? 'none' : 'block';
     list.forEach(p => {
       const thumb = document.createElement('div');
       thumb.className = 'photo-thumb';
-      thumb.innerHTML = `<img src="${p.dataUrl}" alt=""><div class="pt-date">${fmtDateLabel(p.date)}</div>`;
+      thumb.innerHTML = `<img src="${p.dataUrl}" alt=""><div class="pt-star${p.favorite ? ' favorited' : ''}">${starIconSvg()}</div><div class="pt-date">${fmtDateLabel(p.date)}</div>`;
       thumb.addEventListener('click', () => openLightbox(p.id));
       grid.appendChild(thumb);
     });
   }
+  document.getElementById('favFilterPhotos').addEventListener('click', () => {
+    photoFavOnly = !photoFavOnly;
+    renderPhotosScreen();
+  });
 
   function resizeImage(file, maxDim, quality){
     return new Promise((resolve, reject) => {
@@ -291,7 +327,7 @@
       const dataUrl = await resizeImage(file, 1280, 0.72);
       const caption = prompt('Add a caption (optional):', '') || '';
       const pid = photoProjectFilter !== 'all' ? photoProjectFilter : activeProjectId;
-      const photo = { id: uid('photo'), date: todayISO(), projectId: pid, caption, dataUrl, createdAt: Date.now() };
+      const photo = { id: uid('photo'), date: todayISO(), projectId: pid, caption, dataUrl, favorite:false, createdAt: Date.now() };
       photos.push(photo);
       const ok = save(LS.photos, photos);
       if(!ok){
@@ -312,6 +348,7 @@
     openPhotoId = photoId;
     document.getElementById('lightboxImg').src = p.dataUrl;
     document.getElementById('lightboxCaption').textContent = [fmtDateLabel(p.date), projectName(p.projectId), p.caption].filter(Boolean).join(' · ');
+    document.getElementById('lightboxStar').classList.toggle('favorited', !!p.favorite);
     document.getElementById('photoLightbox').classList.add('open');
   }
   function closeLightbox(){
@@ -321,6 +358,39 @@
   document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
   document.getElementById('photoLightbox').addEventListener('click', (e) => {
     if(e.target.id === 'photoLightbox') closeLightbox();
+  });
+  document.getElementById('lightboxStar').addEventListener('click', (e) => {
+    if(!openPhotoId) return;
+    const p = photos.find(x => x.id === openPhotoId);
+    if(!p) return;
+    p.favorite = !p.favorite;
+    save(LS.photos, photos);
+    e.currentTarget.classList.toggle('favorited', p.favorite);
+    e.currentTarget.classList.remove('pop'); void e.currentTarget.offsetWidth; e.currentTarget.classList.add('pop');
+  });
+  document.getElementById('lightboxShare').addEventListener('click', async () => {
+    if(!openPhotoId) return;
+    const p = photos.find(x => x.id === openPhotoId);
+    if(!p) return;
+    try{
+      const res = await fetch(p.dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+      if(navigator.canShare && navigator.canShare({ files:[file] })){
+        await navigator.share({
+          files:[file],
+          title:'DIT Report photo',
+          text:[fmtDateLabel(p.date), projectName(p.projectId), p.caption].filter(Boolean).join(' · ')
+        });
+      } else if(navigator.share){
+        await navigator.share({ title:'DIT Report photo', text:'Photo from ' + projectName(p.projectId) });
+      } else {
+        const a = document.createElement('a');
+        a.href = p.dataUrl; a.download = 'dit-photo-' + p.date + '.jpg'; a.click();
+      }
+    }catch(err){
+      if(err && err.name !== 'AbortError') console.error('Photo share failed', err);
+    }
   });
   document.getElementById('lightboxDelete').addEventListener('click', () => {
     if(!openPhotoId) return;
@@ -337,12 +407,18 @@
       listProjectFilter = id;
       renderReportsScreen();
     });
+    document.getElementById('favFilterList').classList.toggle('active', listFavOnly);
     filterAndRenderList();
   }
+  document.getElementById('favFilterList').addEventListener('click', () => {
+    listFavOnly = !listFavOnly;
+    renderReportsScreen();
+  });
   document.getElementById('reportSearch').addEventListener('input', filterAndRenderList);
   function filterAndRenderList(){
     const q = document.getElementById('reportSearch').value.trim().toLowerCase();
     let list = reports.filter(r => listProjectFilter === 'all' || r.projectId === listProjectFilter);
+    if(listFavOnly) list = list.filter(r => r.favorite);
     if(q){
       list = list.filter(r => {
         const hay = [r.date, r.hardDisk, r.camera, r.studioName, r.remarks, projectName(r.projectId)]
@@ -351,7 +427,7 @@
         return hay.includes(q);
       });
     }
-    list.sort((a,b) => (b.date||'').localeCompare(a.date||'') || b.updatedAt - a.updatedAt);
+    list.sort((a,b) => (b.favorite === a.favorite ? 0 : b.favorite ? 1 : -1) || (b.date||'').localeCompare(a.date||'') || b.updatedAt - a.updatedAt);
     const container = document.getElementById('allReports');
     container.innerHTML = '';
     document.getElementById('reportsEmpty').style.display = list.length ? 'none' : 'block';
@@ -499,10 +575,25 @@
   function renderCrewScreen(){
     const list = document.getElementById('projectList');
     list.innerHTML = '';
-    projects.forEach(p => {
+    const sortedProjects = projects.slice().sort((a,b) => (b.favorite === a.favorite ? 0 : b.favorite ? 1 : -1));
+    sortedProjects.forEach(p => {
       const item = document.createElement('div');
       item.className = 'project-item' + (p.id === crewSelectedProjectId ? ' active' : '');
-      item.innerHTML = `<div><div class="pi-name">${escapeHtml(p.name || 'Untitled')}</div><div class="pi-sub">${escapeHtml(p.director || '—')} · ${p.crew.length} crew</div></div>${p.id === activeProjectId ? '<div class="pi-badge">ACTIVE</div>' : ''}`;
+      item.innerHTML = `
+        <div><div class="pi-name">${escapeHtml(p.name || 'Untitled')}</div><div class="pi-sub">${escapeHtml(p.director || '—')} · ${p.crew.length} crew</div></div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          ${p.id === activeProjectId ? '<div class="pi-badge">ACTIVE</div>' : ''}
+          <button class="star-btn${p.favorite ? ' favorited' : ''}" data-pid="${p.id}" aria-label="Toggle favorite">${starIconSvg()}</button>
+        </div>
+      `;
+      item.querySelector('.star-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        p.favorite = !p.favorite;
+        save(LS.projects, projects);
+        e.currentTarget.classList.toggle('favorited', p.favorite);
+        e.currentTarget.classList.remove('pop'); void e.currentTarget.offsetWidth; e.currentTarget.classList.add('pop');
+        renderCrewScreen();
+      });
       item.addEventListener('click', () => {
         crewSelectedProjectId = p.id;
         activeProjectId = p.id;
@@ -546,6 +637,7 @@
       dop: document.getElementById('newProjectDop').value.trim(),
       productionHouse: document.getElementById('newProjectHouse').value.trim(),
       crew: [],
+      favorite:false,
       createdAt: Date.now()
     };
     projects.push(p);
@@ -689,12 +781,20 @@
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     try{
+      if(typeof html2canvas === 'undefined' || !window.jspdf){
+        throw new Error('LIBS_NOT_LOADED');
+      }
+
       const canvas = await html2canvas(root, {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
         windowWidth: 750
       });
+
+      if(isCanvasBlank(canvas)){
+        throw new Error('BLANK_CANVAS');
+      }
 
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const { jsPDF } = window.jspdf;
@@ -722,13 +822,42 @@
       pdf.save(filename);
     }catch(err){
       console.error('PDF export failed', err);
-      alert("Couldn't generate the PDF. Please try again.");
+      if(err && err.message === 'LIBS_NOT_LOADED'){
+        alert("Couldn't load the PDF tools. Check your internet connection and try again.");
+      } else if(err && err.message === 'BLANK_CANVAS'){
+        alert(
+          "The PDF came out blank. This usually happens when a browser's privacy/" +
+          "fingerprinting protection blocks reading the page as an image — Brave's " +
+          "Shields and Firefox's strict tracking protection are common causes. " +
+          "Try again, or use Chrome/Edge/Safari with default privacy settings."
+        );
+      } else {
+        alert("Couldn't generate the PDF. Please try again.");
+      }
     }finally{
       btn.textContent = originalLabel;
       btn.disabled = false;
       root.innerHTML = '';
     }
   });
+
+  // Samples the rendered canvas to catch the "silently blank" failure mode —
+  // some privacy-hardened browsers return all-white pixel data instead of
+  // throwing, so a try/catch alone won't detect it.
+  function isCanvasBlank(canvas){
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    if(w === 0 || h === 0) return true;
+    const step = Math.max(1, Math.floor(Math.min(w, h) / 100));
+    const data = ctx.getImageData(0, 0, w, h).data;
+    for(let y = 0; y < h; y += step){
+      for(let x = 0; x < w; x += step){
+        const i = (y * w + x) * 4;
+        if(!(data[i] === 255 && data[i+1] === 255 && data[i+2] === 255)) return false;
+      }
+    }
+    return true;
+  }
 
   /* ============ EXCEL EXPORT ============ */
   function reportSheetRows(r){
@@ -780,11 +909,44 @@
     }
   });
 
+  /* ============ CONTACT PICKER ============ */
+  function contactPickerSupported(){
+    return 'contacts' in navigator && 'ContactsManager' in window;
+  }
+
+  // Asks the phone's native contact picker (Android Chrome/Edge only, HTTPS
+  // required) for one contact's phone number. The browser shows its own
+  // permission/selection UI each time — this app never gets standing access
+  // to the address book, only whichever single contact the person taps.
+  async function pickPhoneNumber(defaultNumber){
+    if(contactPickerSupported()){
+      try{
+        const contacts = await navigator.contacts.select(['tel','name'], { multiple:false });
+        if(contacts && contacts.length && contacts[0].tel && contacts[0].tel.length){
+          return contacts[0].tel[0];
+        }
+        return null; // picker opened but nothing usable was chosen
+      }catch(err){
+        if(err && err.name === 'SecurityError') return null; // permission denied
+        // Any other failure: fall through to the manual prompt below
+      }
+    }
+    return prompt('Enter a phone number (with country code):', defaultNumber || '');
+  }
+
+  document.getElementById('pickProfileContactBtn').addEventListener('click', async () => {
+    const num = await pickPhoneNumber(document.getElementById('pPhone').value);
+    if(num) document.getElementById('pPhone').value = num;
+  });
+  document.getElementById('pickCrewContactBtn').addEventListener('click', async () => {
+    const num = await pickPhoneNumber(document.getElementById('newCrewPhone').value);
+    if(num) document.getElementById('newCrewPhone').value = num;
+  });
+
   /* ============ WHATSAPP SHARE ============ */
-  document.getElementById('shareWaBtn').addEventListener('click', () => {
+  document.getElementById('shareWaBtn').addEventListener('click', async () => {
     const project = getProject(currentReport.projectId) || {};
-    const defaultNumber = profile.phone || '';
-    const number = prompt('Send to WhatsApp number (with country code):', defaultNumber);
+    const number = await pickPhoneNumber(profile.phone || '');
     if(!number) return;
     const clean = number.replace(/[^\d+]/g,'').replace(/^\+/,'');
     const text = [
@@ -840,8 +1002,38 @@
 
   if('serviceWorker' in navigator){
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+      navigator.serviceWorker.register('sw.js').then((reg) => {
+        // A worker may already be waiting from a previous visit
+        if(reg.waiting) showUpdateToast(reg);
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if(!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
+              showUpdateToast(reg);
+            }
+          });
+        });
+      }).catch(() => {});
+
+      // Reload once the new worker actually takes control
+      let refreshed = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if(refreshed) return;
+        refreshed = true;
+        window.location.reload();
+      });
     });
+  }
+
+  function showUpdateToast(reg){
+    const toast = document.getElementById('updateToast');
+    toast.classList.add('show');
+    document.getElementById('updateToastBtn').onclick = () => {
+      const worker = reg.waiting || reg.installing;
+      if(worker) worker.postMessage({ type:'SKIP_WAITING' });
+      toast.classList.remove('show');
+    };
   }
 
   /* ============ INIT ============ */

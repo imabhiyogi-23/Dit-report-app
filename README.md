@@ -9,21 +9,30 @@ calendar — built for DITs, 1st ACs, and production teams.
 - **Home** — today's date strip, quick actions, and recent reports at a glance
 - **Calendar** — browse every logged day by month, filter by project, add a report for any date
 - **Photos** — tap "Add photo" to take a picture (opens the camera on mobile) or choose
-  one from your gallery; add an optional caption, browse a grid of everything you've
-  shot, and tap any thumbnail to view it full-size or delete it
-- **Reports** — searchable list of every report across all projects
+  one from your gallery; add an optional caption, star ones worth keeping, filter to
+  favorites, and share a photo straight to WhatsApp or any app via your phone's native
+  share sheet
+- **Reports** — searchable list of every report across all projects, with a
+  favorites filter and a star on each card
 - **Editor** — full media log per day: card no, clip range, storage, remarks, RAW/OFFLINE
   toggle (with format + codec fields for offline), signatures
 - **Crew & Projects** — reachable from Home or Profile — create projects (movie/production),
-  attach crew (camera man, focus puller, gaffer, etc.) with name and phone
+  star the ones you're actively on, attach crew (camera man, focus puller, gaffer, etc.)
+  with name and phone
 - **Profile** — your own DIT details (name, role, WhatsApp number, email, studio)
 - **Export** — PDF (via html2canvas + jsPDF), CSV, and Excel (.xlsx, via SheetJS) —
-  each for a single report or, from Profile, every report at once — plus a
-  WhatsApp share shortcut that opens a pre-filled message to any number
+  each for a single report or, from Profile, every report at once
+- **WhatsApp share** — sends a pre-filled report summary to any number. On Android
+  Chrome/Edge, tapping "Pick from contacts" (next to any phone field, and on the
+  share button itself) opens your phone's native contact picker instead of typing
+  a number by hand — the browser shows its own one-time picker UI, so the app never
+  gets standing access to your address book. Safari and desktop browsers don't
+  support this yet and fall back to typing the number in.
 
 The interface is deliberately plain: a white/light-gray palette, one accent color,
 simple line icons, and no decoration beyond what's needed to read and enter data
-quickly on set.
+quickly on set — with a few small touches (a highlighted active tab, light press
+and transition animations) so it feels responsive without being flashy.
 
 ## Uploading to GitHub
 
@@ -56,6 +65,15 @@ keeps working without a connection — useful for logging cards with patchy set 
 Only your own reports/photos/CSV exports need a live connection for exporting or
 WhatsApp sharing, not for using the log itself.
 
+**Getting updates after install:** because the app is cached for offline use, anyone
+who already opened it before you push a fix or new feature won't see it automatically
+— they'll keep getting the cached version until the cache is invalidated. This app
+handles that itself: whenever you deploy new files, it detects the change in the
+background and shows a small "A new version is ready — Reload" banner at the bottom
+of the screen. If you ever change `sw.js` or `app.js` yourself, bump the
+`CACHE_NAME` value at the top of `sw.js` (e.g. `v2` → `v3`) so the update banner
+fires correctly.
+
 ## How data is stored
 
 All reports, projects, crew, and your profile are saved in the browser's local
@@ -72,9 +90,21 @@ storage on the device you're using — nothing is sent to a server. This means:
 ## WhatsApp sharing note
 
 WhatsApp's `wa.me` links can only pre-fill a **text message**, not attach a file.
-The "Share" button sends a text summary of the report to the number you enter
-(defaulting to your own profile number). To send the full log, export the PDF or
-CSV first and attach it manually in WhatsApp.
+The "Share" button sends a text summary of the report to the number you pick or
+type in. To send the full log, export the PDF or CSV first and attach it manually
+in WhatsApp. Photos are different — the Photos tab's Share button uses your
+phone's native share sheet, which *can* send the actual image file straight to
+WhatsApp, Gmail, or anywhere else, on browsers that support the Web Share API
+(most mobile browsers; not desktop Safari/Firefox).
+
+## If the PDF export comes out blank
+
+This can happen on browsers with strict anti-fingerprinting protection — Brave's
+Shields and Firefox's strict tracking protection are the most common causes, since
+they can intentionally blank out the canvas data the PDF is built from. The app
+detects this and shows an explanation instead of a silently broken file; if you see
+that message, try again or switch to Chrome/Edge/Safari with default privacy
+settings for that export.
 
 ## Tech
 

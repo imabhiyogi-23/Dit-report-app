@@ -85,6 +85,7 @@
     <!-- ===== PHOTOS ===== -->
     <section class="screen" id="screen-photos">
       <div class="project-switcher" id="projectSwitcherPhotos"></div>
+      <button class="fav-filter-chip" id="favFilterPhotos">★ Favorites only</button>
       <button class="btn btn-block btn-dark" id="addPhotoBtn">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="vertical-align:-3px;margin-right:6px;"><path d="M12 5v14M5 12h14"/></svg>
         Add photo
@@ -101,6 +102,7 @@
     <!-- ===== REPORTS LIST ===== -->
     <section class="screen" id="screen-reports">
       <div class="project-switcher" id="projectSwitcherList"></div>
+      <button class="fav-filter-chip" id="favFilterList">★ Favorites only</button>
       <input class="search-input" id="reportSearch" placeholder="Search by date, storage, remarks…">
       <div class="report-cards" id="allReports"></div>
       <div class="empty-state" id="reportsEmpty" style="display:none;">
@@ -192,7 +194,7 @@
           <div><label>Role</label><input id="newCrewRole" placeholder="Camera man"></div>
           <div><label>Name</label><input id="newCrewName"></div>
         </div>
-        <div class="field-row"><label>Phone</label><input id="newCrewPhone" inputmode="tel" placeholder="+91…"></div>
+        <div class="field-row phone-row"><label>Phone</label><div class="phone-input-row"><input id="newCrewPhone" inputmode="tel" placeholder="+91…"><button type="button" class="contact-pick-btn" id="pickCrewContactBtn" title="Pick from contacts">Contacts</button></div></div>
       </div>
       <button class="btn btn-block btn-outline" id="addCrewBtn">Add crew member</button>
     </section>
@@ -209,7 +211,7 @@
       <div class="field-card" id="profileEdit" style="display:none;">
         <div class="field-row"><label>Name</label><input id="pName"></div>
         <div class="field-row"><label>Role</label><input id="pRole" placeholder="DIT"></div>
-        <div class="field-row"><label>WhatsApp number</label><input id="pPhone" inputmode="tel" placeholder="+91XXXXXXXXXX"></div>
+        <div class="field-row phone-row"><label>WhatsApp number</label><div class="phone-input-row"><input id="pPhone" inputmode="tel" placeholder="+91XXXXXXXXXX"><button type="button" class="contact-pick-btn" id="pickProfileContactBtn" title="Pick from contacts">Contacts</button></div></div>
         <div class="field-row"><label>Email</label><input id="pEmail" type="email"></div>
         <div class="field-row"><label>Studio</label><input id="pStudio"></div>
         <button class="btn btn-block btn-dark" id="saveProfileBtn">Save profile</button>
@@ -238,35 +240,46 @@
 
   <nav class="bottom-nav">
     <button class="nav-btn active" data-nav="home">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V20h5v-6h2v6h5V9.5"/></svg>
-      <span>Home</span>
+      <span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V20h5v-6h2v6h5V9.5"/></svg></span>
+      <span class="nav-label">Home</span>
     </button>
     <button class="nav-btn" data-nav="calendar">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2"/><path d="M8 3.5v4M16 3.5v4M4 10.5h16"/></svg>
-      <span>Calendar</span>
+      <span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2"/><path d="M8 3.5v4M16 3.5v4M4 10.5h16"/></svg></span>
+      <span class="nav-label">Calendar</span>
     </button>
     <button class="nav-btn" data-nav="photos">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.2c0-.66.55-1.2 1.2-1.2h2.1l1.2-1.6h6.9l1.2 1.6h2.1c.66 0 1.2.55 1.2 1.2V18c0 .66-.55 1.2-1.2 1.2H5.2c-.66 0-1.2-.55-1.2-1.2z"/><circle cx="12" cy="13" r="3.3"/></svg>
-      <span>Photos</span>
+      <span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.2c0-.66.55-1.2 1.2-1.2h2.1l1.2-1.6h6.9l1.2 1.6h2.1c.66 0 1.2.55 1.2 1.2V18c0 .66-.55 1.2-1.2 1.2H5.2c-.66 0-1.2-.55-1.2-1.2z"/><circle cx="12" cy="13" r="3.3"/></svg></span>
+      <span class="nav-label">Photos</span>
     </button>
     <button class="nav-btn" data-nav="reports">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="4" width="13" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/></svg>
-      <span>Reports</span>
+      <span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="4" width="13" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/></svg></span>
+      <span class="nav-label">Reports</span>
     </button>
     <button class="nav-btn" data-nav="profile">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.2" r="3.3"/><path d="M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6"/></svg>
-      <span>Profile</span>
+      <span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.2" r="3.3"/><path d="M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6"/></svg></span>
+      <span class="nav-label">Profile</span>
     </button>
   </nav>
+</div>
+
+<div class="update-toast" id="updateToast">
+  <span>A new version is ready.</span>
+  <button id="updateToastBtn">Reload</button>
 </div>
 
 <div class="lightbox" id="photoLightbox">
   <button class="lightbox-close" id="lightboxClose" aria-label="Close">
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>
   </button>
+  <button class="lightbox-star" id="lightboxStar" aria-label="Mark as favorite">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.6 5.6 6 .7-4.4 4.2 1.1 6-5.3-3-5.3 3 1.1-6-4.4-4.2 6-.7z"/></svg>
+  </button>
   <img id="lightboxImg" src="" alt="">
   <div class="lightbox-caption" id="lightboxCaption"></div>
-  <button class="btn btn-danger-outline" id="lightboxDelete">Delete photo</button>
+  <div class="lightbox-actions">
+    <button class="btn btn-outline" id="lightboxShare">Share</button>
+    <button class="btn btn-danger-outline" id="lightboxDelete">Delete</button>
+  </div>
 </div>
 
 <div class="print-clip"><div id="printRoot" class="print-root"></div></div>
