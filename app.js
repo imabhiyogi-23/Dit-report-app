@@ -738,126 +738,198 @@
     downloadCsv('all_dit_reports.csv', ['Sl.No','Date','Project','Card No','Clip From','Clip To','Storage','Remarks'], rows);
   });
 
-  /* ============ PDF EXPORT ============ */
+  /* ============ PDF EXPORT (pure vector — no canvas involved anywhere) ============ */
+  // Deliberately avoids html2canvas/screenshot-based PDF generation entirely.
+  // Rasterizing a page to a canvas depends on canvas-read APIs that browsers'
+  // anti-fingerprinting protections (Brave Shields, Firefox strict mode) and
+  // some ad-blockers routinely block or blank out — which produced blank PDFs
+  // no matter how the capture itself was tuned. Drawing text/lines straight
+  // into the PDF with jsPDF's own API sidesteps that whole failure class, and
+  // also yields a smaller file with real selectable text instead of an image.
   document.getElementById('exportPdfBtn').addEventListener('click', async (e) => {
     const btn = e.currentTarget;
     const originalLabel = btn.textContent;
     btn.textContent = 'Preparing…';
     btn.disabled = true;
 
-    const project = getProject(currentReport.projectId) || {};
-    const root = document.getElementById('printRoot');
-    root.innerHTML = `
-      <div class="pdf-sheet">
-        <h1>D.I.T Report</h1>
-        <div class="pdf-sub">${escapeHtml(project.name || 'Untitled project')} — ${fmtDateLabel(currentReport.date)} — Page ${escapeHtml(currentReport.pageNo)} of ${escapeHtml(currentReport.pageOf)}</div>
-        <div class="pdf-grid">
-          <div><b>Production house</b>${escapeHtml(project.productionHouse || '')}</div>
-          <div><b>Director</b>${escapeHtml(project.director || '')}</div>
-          <div><b>DOP</b>${escapeHtml(project.dop || '')}</div>
-          <div><b>Camera</b>${escapeHtml(currentReport.camera || '')}</div>
-          <div><b>Studio</b>${escapeHtml(currentReport.studioName || '')}</div>
-          <div><b>Hard disk</b>${escapeHtml(currentReport.hardDisk || '')}</div>
-          <div><b>Media type</b>${escapeHtml(currentReport.mediaType)}${currentReport.mediaType==='OFFLINE' ? ' ('+escapeHtml(currentReport.format||'')+' / '+escapeHtml(currentReport.codec||'')+')' : ''}</div>
-          <div><b>Remarks</b>${escapeHtml(currentReport.remarks || '')}</div>
-        </div>
-        <table class="pdf-table">
-          <thead><tr><th>Sl.No</th><th>Date</th><th>Card no</th><th>Clip from</th><th>Clip to</th><th>Storage</th><th>Remarks</th></tr></thead>
-          <tbody>
-            ${currentReport.rows.map((row,idx) => `<tr><td>${idx+1}</td><td>${escapeHtml(row.date)}</td><td>${escapeHtml(row.cardNo)}</td><td>${escapeHtml(row.clipFrom)}</td><td>${escapeHtml(row.clipTo)}</td><td>${escapeHtml(row.storage)}</td><td>${escapeHtml(row.remarks)}</td></tr>`).join('')}
-          </tbody>
-        </table>
-        <div class="pdf-sign">
-          <div>1st AC / DIT: ${escapeHtml(currentReport.signAC || '')}</div>
-          <div>Ast. Director: ${escapeHtml(currentReport.signDirector || '')}</div>
-        </div>
-      </div>
-    `;
-    const filename = (projectName(currentReport.projectId) + '_' + currentReport.date + '_DIT-Report.pdf').replace(/[^a-z0-9_.\-]+/gi,'_');
-
-    // Wait for web fonts so text isn't rendered with a fallback metric
-    // mismatch, then give the browser one paint frame before capturing.
-    try{ if(document.fonts && document.fonts.ready) await document.fonts.ready; }catch(err){}
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
     try{
-      if(typeof html2canvas === 'undefined' || !window.jspdf){
+      if(!window.jspdf || !window.jspdf.jsPDF){
         throw new Error('LIBS_NOT_LOADED');
       }
 
-      const canvas = await html2canvas(root, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        useCORS: true,
-        windowWidth: 750
-      });
-
-      if(isCanvasBlank(canvas)){
-        throw new Error('BLANK_CANVAS');
-      }
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const project = getProject(currentReport.projectId) || {};
       const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({ unit:'pt', format:'a4', orientation:'portrait' });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 24;
-      const usableWidth = pageWidth - margin * 2;
-      const usableHeight = pageHeight - margin * 2;
-      const imgWidth = usableWidth;
-      const imgHeight = canvas.height * imgWidth / canvas.width;
+      const doc = new jsPDF({ unit:'pt', format:'a4', orientation:'portrait' });
 
-      let heightLeft = imgHeight;
-      let position = margin;
-      pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
-      heightLeft -= usableHeight;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 40;
+      const contentWidth = pageWidth - margin * 2;
+      const inkColor = [17, 24, 39];
+      const mutedColor = [107, 114, 128];
+      const borderColor = [231, 231, 234];
+      const headerFillColor = [17, 24, 39];
 
-      while(heightLeft > 0){
-        position = margin - (imgHeight - heightLeft);
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
-        heightLeft -= usableHeight;
+      let y = margin;
+
+      function ensureSpace(needed){
+        if(y + needed > pageHeight - margin){
+          doc.addPage();
+          y = margin;
+        }
       }
 
-      pdf.save(filename);
+      // ---- Title ----
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(20);
+      doc.setTextColor(...inkColor);
+      doc.text('D.I.T Report', margin, y + 16);
+      y += 26;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(...mutedColor);
+      const subtitle = `${project.name || 'Untitled project'} — ${fmtDateLabel(currentReport.date)} — Page ${currentReport.pageNo || '1'} of ${currentReport.pageOf || '1'}`;
+      doc.text(subtitle, margin, y);
+      y += 18;
+      doc.setDrawColor(...inkColor);
+      doc.setLineWidth(1.4);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 20;
+
+      // ---- Meta grid (two columns) ----
+      const metaPairs = [
+        ['Production house', project.productionHouse || ''],
+        ['Director', project.director || ''],
+        ['DOP', project.dop || ''],
+        ['Camera', currentReport.camera || ''],
+        ['Studio', currentReport.studioName || ''],
+        ['Hard disk', currentReport.hardDisk || ''],
+        ['Media type', currentReport.mediaType + (currentReport.mediaType === 'OFFLINE' ? ` (${currentReport.format || ''} / ${currentReport.codec || ''})` : '')],
+        ['Remarks', currentReport.remarks || '']
+      ];
+      const colWidth = contentWidth / 2;
+      const baseRowHeight = 26;
+      const metaLineHeight = 12;
+      for(let i = 0; i < metaPairs.length; i += 2){
+        const pairA = metaPairs[i];
+        const pairB = metaPairs[i + 1];
+        const linesA = doc.splitTextToSize(pairA[1] || '—', colWidth - 14);
+        const linesB = pairB ? doc.splitTextToSize(pairB[1] || '—', colWidth - 14) : [];
+        const maxLines = Math.max(1, linesA.length, linesB.length);
+        const rowHeight = baseRowHeight + (maxLines - 1) * metaLineHeight;
+        ensureSpace(rowHeight);
+        [[pairA, linesA], [pairB, linesB]].forEach(([pair, lines], col) => {
+          if(!pair) return;
+          const x = margin + col * colWidth;
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8.5);
+          doc.setTextColor(...mutedColor);
+          doc.text(pair[0].toUpperCase(), x, y);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(11);
+          doc.setTextColor(...inkColor);
+          doc.text(lines, x, y + 13);
+        });
+        doc.setDrawColor(...borderColor);
+        doc.setLineWidth(0.75);
+        doc.line(margin, y + rowHeight - 7, pageWidth - margin, y + rowHeight - 7);
+        y += rowHeight;
+      }
+      y += 12;
+
+      // ---- Card log table ----
+      const columns = [
+        { label:'Sl.No', width:32 },
+        { label:'Date', width:52 },
+        { label:'Card no', width:58 },
+        { label:'Clip from', width:62 },
+        { label:'Clip to', width:62 },
+        { label:'Storage', width:70 }
+      ];
+      const fixedWidth = columns.reduce((sum, c) => sum + c.width, 0);
+      columns.push({ label:'Remarks', width: contentWidth - fixedWidth });
+
+      function drawTableHeader(){
+        doc.setFillColor(...headerFillColor);
+        doc.rect(margin, y, contentWidth, 20, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(255, 255, 255);
+        let cx = margin;
+        columns.forEach((col) => {
+          doc.text(col.label, cx + 5, y + 13.5);
+          cx += col.width;
+        });
+        y += 20;
+      }
+
+      ensureSpace(40);
+      drawTableHeader();
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      const cellPad = 5;
+      const lineHeight = 11;
+
+      currentReport.rows.forEach((row, idx) => {
+        const values = [
+          String(idx + 1), row.date || '', row.cardNo || '',
+          row.clipFrom || '', row.clipTo || '', row.storage || '', row.remarks || ''
+        ];
+        const wrapped = values.map((v, i) => doc.splitTextToSize(v || '', columns[i].width - cellPad * 2));
+        const linesNeeded = Math.max(1, ...wrapped.map(w => w.length));
+        const thisRowHeight = linesNeeded * lineHeight + 6;
+
+        if(y + thisRowHeight > pageHeight - margin){
+          doc.addPage();
+          y = margin;
+          drawTableHeader();
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+        }
+
+        doc.setTextColor(...inkColor);
+        let cx = margin;
+        columns.forEach((col, i) => {
+          doc.text(wrapped[i], cx + cellPad, y + 12);
+          cx += col.width;
+        });
+        doc.setDrawColor(...borderColor);
+        doc.setLineWidth(0.75);
+        doc.line(margin, y + thisRowHeight, pageWidth - margin, y + thisRowHeight);
+        y += thisRowHeight;
+      });
+      y += 26;
+
+      // ---- Signatures ----
+      ensureSpace(40);
+      const sigColWidth = contentWidth / 2;
+      doc.setDrawColor(...inkColor);
+      doc.setLineWidth(1);
+      doc.line(margin, y, margin + sigColWidth - 20, y);
+      doc.line(margin + sigColWidth, y, margin + sigColWidth + sigColWidth - 20, y);
+      y += 14;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(...inkColor);
+      doc.text('1st AC / DIT: ' + (currentReport.signAC || ''), margin, y);
+      doc.text('Ast. Director: ' + (currentReport.signDirector || ''), margin + sigColWidth, y);
+
+      const filename = (projectName(currentReport.projectId) + '_' + currentReport.date + '_DIT-Report.pdf').replace(/[^a-z0-9_.\-]+/gi,'_');
+      doc.save(filename);
     }catch(err){
       console.error('PDF export failed', err);
       if(err && err.message === 'LIBS_NOT_LOADED'){
-        alert("Couldn't load the PDF tools. Check your internet connection and try again.");
-      } else if(err && err.message === 'BLANK_CANVAS'){
-        alert(
-          "The PDF came out blank. This usually happens when a browser's privacy/" +
-          "fingerprinting protection blocks reading the page as an image — Brave's " +
-          "Shields and Firefox's strict tracking protection are common causes. " +
-          "Try again, or use Chrome/Edge/Safari with default privacy settings."
-        );
+        alert("Couldn't load the PDF tool. Check your internet connection and try again — if it keeps happening, an ad blocker or firewall may be blocking cdnjs.cloudflare.com.");
       } else {
         alert("Couldn't generate the PDF. Please try again.");
       }
     }finally{
       btn.textContent = originalLabel;
       btn.disabled = false;
-      root.innerHTML = '';
     }
   });
-
-  // Samples the rendered canvas to catch the "silently blank" failure mode —
-  // some privacy-hardened browsers return all-white pixel data instead of
-  // throwing, so a try/catch alone won't detect it.
-  function isCanvasBlank(canvas){
-    const ctx = canvas.getContext('2d');
-    const w = canvas.width, h = canvas.height;
-    if(w === 0 || h === 0) return true;
-    const step = Math.max(1, Math.floor(Math.min(w, h) / 100));
-    const data = ctx.getImageData(0, 0, w, h).data;
-    for(let y = 0; y < h; y += step){
-      for(let x = 0; x < w; x += step){
-        const i = (y * w + x) * 4;
-        if(!(data[i] === 255 && data[i+1] === 255 && data[i+2] === 255)) return false;
-      }
-    }
-    return true;
-  }
 
   /* ============ EXCEL EXPORT ============ */
   function reportSheetRows(r){
@@ -943,12 +1015,9 @@
     if(num) document.getElementById('newCrewPhone').value = num;
   });
 
-  /* ============ WHATSAPP SHARE ============ */
+  /* ============ REPORT SHARE (same mechanism as photo sharing) ============ */
   document.getElementById('shareWaBtn').addEventListener('click', async () => {
     const project = getProject(currentReport.projectId) || {};
-    const number = await pickPhoneNumber(profile.phone || '');
-    if(!number) return;
-    const clean = number.replace(/[^\d+]/g,'').replace(/^\+/,'');
     const text = [
       `*D.I.T Report* — ${project.name || 'Untitled project'}`,
       `Date: ${fmtDateLabel(currentReport.date)}`,
@@ -960,6 +1029,26 @@
       '',
       '(Export the PDF or CSV from the app to attach the full log.)'
     ].filter(Boolean).join('\n');
+
+    // Primary path: the same native share sheet used for photos, so sharing a
+    // report feels identical to sharing a photo — pick WhatsApp, SMS, email,
+    // anything installed, then pick the person inside that app.
+    if(navigator.share){
+      try{
+        await navigator.share({ title: 'DIT Report', text });
+        return;
+      }catch(err){
+        if(err && err.name === 'AbortError') return; // user cancelled the sheet
+        // Any other failure: fall through to the WhatsApp-direct fallback below
+      }
+    }
+
+    // Fallback for browsers without the Web Share API (desktop Safari/Firefox,
+    // most desktop browsers): pick a number (from contacts on Android Chrome,
+    // typed in elsewhere) and open WhatsApp directly with the text pre-filled.
+    const number = await pickPhoneNumber(profile.phone || '');
+    if(!number) return;
+    const clean = number.replace(/[^\d+]/g,'').replace(/^\+/,'');
     window.open('https://wa.me/' + clean + '?text=' + encodeURIComponent(text), '_blank');
   });
 

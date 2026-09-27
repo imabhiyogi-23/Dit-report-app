@@ -87,29 +87,38 @@ storage on the device you're using — nothing is sent to a server. This means:
   local storage at a few megabytes per site, so a large photo log can eventually hit
   that limit — if a photo fails to save, delete a few older ones first.
 
-## WhatsApp sharing note
+## Sharing a report
 
-WhatsApp's `wa.me` links can only pre-fill a **text message**, not attach a file.
-The "Share" button sends a text summary of the report to the number you pick or
-type in. To send the full log, export the PDF or CSV first and attach it manually
-in WhatsApp. Photos are different — the Photos tab's Share button uses your
-phone's native share sheet, which *can* send the actual image file straight to
-WhatsApp, Gmail, or anywhere else, on browsers that support the Web Share API
-(most mobile browsers; not desktop Safari/Firefox).
+Both the Photos tab and the report editor's Share button now work the same way:
+they open your phone or browser's **native share sheet** first — the same picker
+you'd get from any app — so you choose WhatsApp, SMS, email, or anything else
+installed, then pick the person inside that app. Photos share the actual image
+file; reports share a text summary (WhatsApp links can only pre-fill text, not
+attach a file, so for the full log, export the PDF or CSV first and attach it
+manually). On browsers without share-sheet support (desktop Safari/Firefox, most
+desktop browsers generally), the report Share button falls back to picking a
+number — via "Pick from contacts" on Android Chrome/Edge, or by typing it in
+elsewhere — and opens WhatsApp directly with the text ready to send.
 
-## If the PDF export comes out blank
+## About the PDF export
 
-This can happen on browsers with strict anti-fingerprinting protection — Brave's
-Shields and Firefox's strict tracking protection are the most common causes, since
-they can intentionally blank out the canvas data the PDF is built from. The app
-detects this and shows an explanation instead of a silently broken file; if you see
-that message, try again or switch to Chrome/Edge/Safari with default privacy
-settings for that export.
+The PDF is built with **pure vector drawing** (jsPDF's own text/table/line APIs) —
+it does not take a screenshot of anything, and no canvas rendering or image capture
+is involved at any point. This was a deliberate rewrite: an earlier screenshot-based
+approach (`html2canvas`) could come out blank on browsers with strict
+anti-fingerprinting protection (Brave Shields, Firefox strict mode) or extensions
+that block canvas-reading APIs, since those are exactly the APIs such tools are
+designed to interfere with. Drawing the report directly avoids that entire failure
+class, and as a bonus produces a smaller file with real, selectable text instead of
+a flattened image. If the PDF still doesn't generate, it's almost always one of:
+- **The library failed to load** — the app shows an alert naming this; check your
+  connection, or an ad blocker/firewall may be blocking `cdnjs.cloudflare.com`.
+- **A stale cached copy of the app** — see "Getting updates after install" above.
 
 ## Tech
 
 Plain HTML, CSS, and JavaScript — no build step, no framework, no dependencies to
-install. The only external resources are Google Fonts (Inter), html2canvas and
-jsPDF (used together to generate the PDF report), and SheetJS (for the Excel
-export). `manifest.json` and `sw.js` are what make it installable
-and give it basic offline support.
+install. The only external resources are Google Fonts (Inter), jsPDF (for the PDF,
+drawn as vector text/tables — no canvas or screenshot step), and SheetJS (for the
+Excel export). `manifest.json` and `sw.js` are what make it installable and give
+it basic offline support.
