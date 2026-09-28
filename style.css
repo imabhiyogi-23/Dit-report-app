@@ -16,7 +16,7 @@
   --radius-lg:18px;
   --radius-md:12px;
   --radius-sm:9px;
-  --font:'Inter', sans-serif;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}

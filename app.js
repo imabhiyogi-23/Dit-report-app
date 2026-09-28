@@ -738,6 +738,31 @@
     downloadCsv('all_dit_reports.csv', ['Sl.No','Date','Project','Card No','Clip From','Clip To','Storage','Remarks'], rows);
   });
 
+  /* ============ LOCAL LIBRARY LOADER ============ */
+  // jsPDF and SheetJS ship inside the app (vendor/) and are precached by the
+  // service worker, so exports work offline. They're loaded on first use (and
+  // pre-warmed shortly after startup) to keep the app's own start-up fast.
+  const libPromises = {};
+  function loadLib(src, isReady){
+    if(isReady()) return Promise.resolve();
+    if(libPromises[src]) return libPromises[src];
+    libPromises[src] = new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      el.src = src;
+      el.onload = () => isReady() ? resolve() : reject(new Error('LIBS_NOT_LOADED'));
+      el.onerror = () => { delete libPromises[src]; reject(new Error('LIBS_NOT_LOADED')); };
+      document.head.appendChild(el);
+    });
+    return libPromises[src];
+  }
+  const loadPdfLib  = () => loadLib('vendor/jspdf.umd.min.js', () => !!(window.jspdf && window.jspdf.jsPDF));
+  const loadXlsxLib = () => loadLib('vendor/xlsx.full.min.js', () => typeof XLSX !== 'undefined');
+  window.addEventListener('load', () => {
+    const warm = () => { loadPdfLib().catch(() => {}); loadXlsxLib().catch(() => {}); };
+    if('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 4000 });
+    else setTimeout(warm, 2000);
+  });
+
   /* ============ PDF EXPORT (pure vector — no canvas involved anywhere) ============ */
   // Deliberately avoids html2canvas/screenshot-based PDF generation entirely.
   // Rasterizing a page to a canvas depends on canvas-read APIs that browsers'
@@ -753,9 +778,7 @@
     btn.disabled = true;
 
     try{
-      if(!window.jspdf || !window.jspdf.jsPDF){
-        throw new Error('LIBS_NOT_LOADED');
-      }
+      await loadPdfLib();
 
       const project = getProject(currentReport.projectId) || {};
       const { jsPDF } = window.jspdf;
@@ -921,7 +944,7 @@
     }catch(err){
       console.error('PDF export failed', err);
       if(err && err.message === 'LIBS_NOT_LOADED'){
-        alert("Couldn't load the PDF tool. Check your internet connection and try again — if it keeps happening, an ad blocker or firewall may be blocking cdnjs.cloudflare.com.");
+        alert("Couldn't load the PDF tool. Please reload the app once while online so it can finish saving for offline use, then try again.");
       } else {
         alert("Couldn't generate the PDF. Please try again.");
       }
@@ -946,8 +969,9 @@
     XLSX.writeFile(wb, filename);
   }
 
-  document.getElementById('exportXlsxBtn').addEventListener('click', () => {
+  document.getElementById('exportXlsxBtn').addEventListener('click', async () => {
     try{
+      await loadXlsxLib();
       downloadXlsx(
         (projectName(currentReport.projectId) + '_' + currentReport.date + '.xlsx').replace(/[^a-z0-9_.\-]+/gi,'_'),
         [{ name:'Card Log', rows: reportSheetRows(currentReport) }]
@@ -958,8 +982,9 @@
     }
   });
 
-  document.getElementById('exportAllXlsxBtn').addEventListener('click', () => {
+  document.getElementById('exportAllXlsxBtn').addEventListener('click', async () => {
     try{
+      await loadXlsxLib();
       const header = ['Sl.No','Date','Project','Card No','Clip From','Clip To','Storage','Remarks'];
       let rows = [];
       reports.slice().sort((a,b) => (a.date||'').localeCompare(b.date||'')).forEach(r => { rows = rows.concat(reportToCsvRows(r)); });
@@ -1105,10 +1130,13 @@
         });
       }).catch(() => {});
 
-      // Reload once the new worker actually takes control
+      // Reload once a NEW worker takes over an already-controlled page (a real
+      // update). On the very first visit the worker also "takes control", but
+      // that must not reload the page — there's nothing to update yet.
+      const hadController = !!navigator.serviceWorker.controller;
       let refreshed = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if(refreshed) return;
+        if(!hadController || refreshed) return;
         refreshed = true;
         window.location.reload();
       });

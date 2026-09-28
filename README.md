@@ -20,7 +20,7 @@ calendar — built for DITs, 1st ACs, and production teams.
   star the ones you're actively on, attach crew (camera man, focus puller, gaffer, etc.)
   with name and phone
 - **Profile** — your own DIT details (name, role, WhatsApp number, email, studio)
-- **Export** — PDF (via html2canvas + jsPDF), CSV, and Excel (.xlsx, via SheetJS) —
+- **Export** — PDF (drawn with jsPDF), CSV, and Excel (.xlsx, via SheetJS) —
   each for a single report or, from Profile, every report at once
 - **WhatsApp share** — sends a pre-filled report summary to any number. On Android
   Chrome/Edge, tapping "Pick from contacts" (next to any phone field, and on the
@@ -38,9 +38,10 @@ and transition animations) so it feels responsive without being flashy.
 
 1. Create a new repository on GitHub (e.g. `dit-report-app`).
 2. Upload everything — `index.html`, `style.css`, `app.js`, `manifest.json`, `sw.js`,
-   `README.md`, and the `icons` folder (`icon-192.png`, `icon-512.png`,
-   `apple-touch-icon.png`) — keeping the same folder structure (the `icons` folder
-   stays a subfolder; everything else sits at the repo root).
+   `README.md`, plus the `icons` folder and the `vendor` folder (which holds the
+   PDF and Excel libraries so they work offline) — keeping the same folder
+   structure (`icons` and `vendor` stay subfolders; everything else sits at the
+   repo root).
 3. Go to **Settings → Pages**, set the source to the `main` branch and `/ (root)`,
    and save. GitHub will give you a live HTTPS URL like
    `https://<your-username>.github.io/dit-report-app/`.
@@ -60,10 +61,19 @@ browsers require a secure origin for installability):
 - **Desktop (Chrome/Edge)** — an install icon appears in the address bar, or use
   Profile → Install app.
 
-Once installed, a small service worker (`sw.js`) caches the app's own files so it
-keeps working without a connection — useful for logging cards with patchy set wifi.
-Only your own reports/photos/CSV exports need a live connection for exporting or
-WhatsApp sharing, not for using the log itself.
+## Works fully offline
+
+After the first visit, the whole app runs with **no internet at all**. The service
+worker (`sw.js`) saves every file the app needs — including the PDF and Excel
+libraries in `vendor/` — and the app makes no external requests (no CDNs, no web
+fonts; it uses your device's own system font). That means logging cards, browsing
+the calendar, taking photos, and exporting **PDF, Excel and CSV** all work in
+airplane mode, and they're fast because nothing is fetched over the network.
+Reports, photos and crew are stored on the device itself.
+
+Only two things genuinely need a connection: opening WhatsApp (the fallback
+`wa.me` link) and receiving app updates. Open the app once while online so it can
+save itself; after that you can forget about signal.
 
 **Getting updates after install:** because the app is cached for offline use, anyone
 who already opened it before you push a fix or new feature won't see it automatically
@@ -111,14 +121,14 @@ that block canvas-reading APIs, since those are exactly the APIs such tools are
 designed to interfere with. Drawing the report directly avoids that entire failure
 class, and as a bonus produces a smaller file with real, selectable text instead of
 a flattened image. If the PDF still doesn't generate, it's almost always one of:
-- **The library failed to load** — the app shows an alert naming this; check your
-  connection, or an ad blocker/firewall may be blocking `cdnjs.cloudflare.com`.
+- **The app hasn't finished saving itself for offline use** — open it once while
+  online, reload, and try again (the app shows an alert naming this).
 - **A stale cached copy of the app** — see "Getting updates after install" above.
 
 ## Tech
 
-Plain HTML, CSS, and JavaScript — no build step, no framework, no dependencies to
-install. The only external resources are Google Fonts (Inter), jsPDF (for the PDF,
-drawn as vector text/tables — no canvas or screenshot step), and SheetJS (for the
-Excel export). `manifest.json` and `sw.js` are what make it installable and give
-it basic offline support.
+Plain HTML, CSS, and JavaScript — no build step, no framework, no CDN. The only
+third-party code is bundled in `vendor/`: jsPDF (PDF, drawn as vector text/tables —
+no canvas or screenshot step) and SheetJS (Excel). They load on first use and are
+pre-warmed shortly after start-up. `manifest.json` and `sw.js` make the app
+installable and offline-capable.
